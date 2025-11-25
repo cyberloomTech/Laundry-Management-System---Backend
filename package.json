@@ -1,0 +1,20 @@
+{
+  "name": "laundry_backend",
+  "version": "1.0.0",
+  "description": "laundry backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "config": "^4.1.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^9.0.0",
+    "nodemon": "^3.1.11",
+    "request": "^2.88.2",
+    "socket.io": "^4.8.1"
+  }
+}

@@ -1,0 +1,1145 @@
+{
+	"info": {
+		"_postman_id": "e1826912-e929-4422-bc29-962dd51e574f",
+		"name": "Laundry",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "50315409",
+		"_collection_link": "https://highgoal8888-8352741.postman.co/workspace/highgoal8888's-Workspace~ce205f30-16d8-4a37-8725-6250cab5aee1/collection/50315409-e1826912-e929-4422-bc29-962dd51e574f?action=share&source=collection_link&creator=50315409"
+	},
+	"item": [
+		{
+			"name": "auth",
+			"item": [
+				{
+					"name": "register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "name",
+									"value": "test",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "123456",
+									"type": "text"
+								},
+								{
+									"key": "password2",
+									"value": "123456",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/auth/register",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "name",
+									"value": "admin",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "123456",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/auth/login",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "user",
+			"item": [
+				{
+					"name": "get profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/users/profile",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"users",
+								"profile"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get all users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/users/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"users",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create user",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"test1\",\r\n    \"password\": 123456,\r\n    \"password2\": 123456,\r\n    \"role\": [\"salesman\", \"cashier\"],\r\n    \"branch\": \"main\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/users/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"users",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get user by id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/users/6925826d446ef04227c89075",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"users",
+								"6925826d446ef04227c89075"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update user",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"role\":[\"cashier\"]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/users/692580d516efe27b7a839c09",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"users",
+								"692580d516efe27b7a839c09"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update my profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "name",
+									"value": "admin_update",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/users/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"users",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete user",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/users/6925826d446ef04227c89075",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"users",
+								"6925826d446ef04227c89075"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "item",
+			"item": [
+				{
+					"name": "create item",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "itemType",
+									"value": "T-shirt1",
+									"type": "text"
+								},
+								{
+									"key": "category",
+									"value": "clothing",
+									"type": "text"
+								},
+								{
+									"key": "price",
+									"value": "50",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/items/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"items",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get all items",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": []
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/items/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"items",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get item by id",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "itemType",
+									"value": "T-shirt",
+									"type": "text"
+								},
+								{
+									"key": "category",
+									"value": "clothing",
+									"type": "text"
+								},
+								{
+									"key": "price",
+									"value": "50",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/items/692584ddc35f8a8e16e9b002",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"items",
+								"692584ddc35f8a8e16e9b002"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update item",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "itemType",
+									"value": "T-shirt2",
+									"type": "text"
+								},
+								{
+									"key": "category",
+									"value": "clothing",
+									"type": "text"
+								},
+								{
+									"key": "price",
+									"value": "100",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/items/692584ddc35f8a8e16e9b002",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"items",
+								"692584ddc35f8a8e16e9b002"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete item",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "itemType",
+									"value": "T-shirt",
+									"type": "text"
+								},
+								{
+									"key": "category",
+									"value": "clothing",
+									"type": "text"
+								},
+								{
+									"key": "price",
+									"value": "50",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/items/692584ddc35f8a8e16e9b002",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"items",
+								"692584ddc35f8a8e16e9b002"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "order",
+			"item": [
+				{
+					"name": "create order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "\r\n{\r\n    \"customerName\": \"John1\",\r\n    \"customerPhone\": \"1234567891\",\r\n    \"items\": [{ \"itemType\": \"T-Shirt\", \"quantity\": 3, \"price\": 50 }],\r\n    \"totalAmount\": 150\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/orders/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get all orders",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "\r\n{\r\n    \"customerName\": \"John\",\r\n    \"customerPhone\": \"1234567890\",\r\n    \"items\": [{ \"itemType\": \"T-Shirt\", \"quantity\": 3, \"price\": 50 }],\r\n    \"totalAmount\": 150\r\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/orders/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get order by id",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "\r\n{\r\n    \"customerName\": \"John\",\r\n    \"customerPhone\": \"1234567890\",\r\n    \"items\": [{ \"itemType\": \"T-Shirt\", \"quantity\": 3, \"price\": 50 }],\r\n    \"totalAmount\": 150\r\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/orders/6925856bc35f8a8e16e9b014",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders",
+								"6925856bc35f8a8e16e9b014"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "\r\n{\r\n    \"customerName\": \"John2\",\r\n    \"customerPhone\": \"1234567890\",\r\n    \"items\": [{ \"itemType\": \"T-Shirt\", \"quantity\": 3, \"price\": 50 }],\r\n    \"totalAmount\": 150\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/orders/6925856bc35f8a8e16e9b014",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders",
+								"6925856bc35f8a8e16e9b014"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete order",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "\r\n{\r\n    \"customerName\": \"John\",\r\n    \"customerPhone\": \"1234567890\",\r\n    \"items\": [{ \"itemType\": \"T-Shirt\", \"quantity\": 3, \"price\": 50 }],\r\n    \"totalAmount\": 150\r\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/orders/6925856bc35f8a8e16e9b014",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders",
+								"6925856bc35f8a8e16e9b014"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "branch",
+			"item": [
+				{
+					"name": "create new branch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "branch",
+									"value": "main1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/branches",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"branches"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get all branches",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "branch",
+									"value": "main",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/branches",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"branches"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get branch by id",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "branch",
+									"value": "main",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/branches/6925802816efe27b7a839bfa",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"branches",
+								"6925802816efe27b7a839bfa"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update branch",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "branch",
+									"value": "main123",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/branches/6925802816efe27b7a839bfa",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"branches",
+								"6925802816efe27b7a839bfa"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete branch",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "branch",
+									"value": "main",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/branches/6925802816efe27b7a839bfa",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"branches",
+								"6925802816efe27b7a839bfa"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "role",
+			"item": [
+				{
+					"name": "create new role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"roleName\": \"special\",\r\n    \"permission\": [\"order\", \"status\", \"price\", \"receipt\", \"user\", \"configuration\"]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/roles",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"roles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get all roles",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"roleName\": \"special\",\r\n    \"permission\": [\"order\", \"status\", \"price\", \"receipt\", \"user\", \"configuration\"]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/roles",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"roles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get role by id",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"roleName\": \"special\",\r\n    \"permission\": [\"order\", \"status\", \"price\", \"receipt\", \"user\", \"configuration\"]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/roles/69257e1e16efe27b7a839bd8",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"roles",
+								"69257e1e16efe27b7a839bd8"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update role",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"permission\": [\"order\", \"status\", \"receipt\"]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/roles/69257e1e16efe27b7a839bd8",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"roles",
+								"69257e1e16efe27b7a839bd8"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete role",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjU3YjZmZTViN2Q2OWIyOWI2MTE5MiIsIm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbImFkbWluIl0sInBlcm1pc3Npb25zIjpbXSwiYnJhbmNoIjoibWFpbiIsImlhdCI6MTc2NDA2NDM4NSwiZXhwIjoxNzY0MTUwNzg1fQ.1JYyJavhfinohtIpciOmcJ8L4df0BXb-feU7iS0UVxg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"roleName\": \"special\",\r\n    \"permission\": [\"order\", \"status\", \"price\", \"receipt\", \"user\", \"configuration\"]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/roles/69257fb716efe27b7a839bef",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"roles",
+								"69257fb716efe27b7a839bef"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "test",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true,
+				"disabledSystemHeaders": {
+					"connection": true
+				}
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": []
+				},
+				"url": {
+					"raw": "http://localhost:3000/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

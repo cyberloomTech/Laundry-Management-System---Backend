@@ -1,0 +1,314 @@
+================================================================================
+                    LAUNDRY BACKEND API GUIDE
+================================================================================
+BASE URL: http://localhost:3000
+
+================================================================================
+DATABASE STRUCTURE
+================================================================================
+
+USER
+- name (String, unique, required)
+- password (String, hashed, required)
+- role (Array of String: ["admin", "salesperson", "cashier", "operator", "special"])
+- branch (String, optional)
+- createdAt, updatedAt (Date)
+
+ROLE
+- roleName (String: "admin" | "salesperson" | "cashier" | "operator" | "special")
+- permission (Array: ["order", "status", "price", "receipt", "user", "configuration"], default: [])
+- createdAt, updatedAt (Date)
+
+BRANCH
+- branch (String, required)
+- createdAt, updatedAt (Date)
+
+ITEM
+- itemType (String, required)
+- category (String: "clothing" | "home" | "accessories")
+- price (Number, required)
+- createdAt, updatedAt (Date)
+
+ORDER
+- customerName, customerPhone (String, required)
+- customerEmail (String, optional)
+- items: [{ itemType, quantity, price }]
+- totalAmount (Number, required)
+- status (String: "received" | "completed" | "delivered", default: "received")
+- paymentStatus (String: "unpaid" | "partial" | "paid", default: "unpaid")
+- notes (String, optional)
+- createdBy (User ref)
+- createdAt, updatedAt (Date)
+
+CHAT
+- chatType (String: "direct" | "branch" | "admin", required)
+- participants (Array of User refs)
+- branch (String, required for branch chats)
+- lastMessage (Message ref)
+- lastActivity (Date)
+- isActive (Boolean, default: true)
+- createdAt, updatedAt (Date)
+
+MESSAGE
+- chat (Chat ref, required)
+- sender (User ref, required)
+- message (String, required)
+- messageType (String: "text" | "file" | "image", default: "text")
+- readBy: [{ user: User ref, readAt: Date }]
+- isEdited (Boolean, default: false)
+- editedAt (Date)
+- createdAt, updatedAt (Date)
+
+================================================================================
+KEY FUNCTIONALITIES
+================================================================================
+
+1. AUTHENTICATION
+   - JWT-based authentication (24h expiration)
+   - Role-based access control with permissions
+   - Password hashing with bcrypt
+   - Token includes role and permissions data
+
+2. USER MANAGEMENT
+   - Any user: View own profile, update own profile
+   - Admin only: Full CRUD on all users
+
+3. ROLE MANAGEMENT
+   - Admin only: Full CRUD on roles and permissions
+   - Define custom permissions for each role
+
+4. BRANCH MANAGEMENT
+   - Admin only: Full CRUD on branches
+
+5. ITEM MANAGEMENT
+   - Authenticated users: Full CRUD on items
+   - Pagination and category filtering
+
+6. ORDER MANAGEMENT
+   - Authenticated users: Full CRUD on orders
+   - Advanced filtering: status, payment, date range, today's orders
+   - Pagination support
+
+7. CHAT SYSTEM (Real-time with Socket.IO)
+   - Direct messaging between any two users
+   - Branch chat rooms (all users in same branch)
+   - Admin chat (all users can communicate with admins)
+   - Message editing, deletion, and read receipts
+   - Real-time messaging with Socket.IO
+   - Typing indicators and online/offline status
+   - Message read receipts in real-time
+
+================================================================================
+API ENDPOINTS
+================================================================================
+
+AUTH (Public)
+-------------
+POST   /api/auth/register    Body: { name, password, password2, role? (String or Array), branch? }
+POST   /api/auth/login       Body: { name, password }
+→ Returns: { user, token } (token includes roles array and permissions array)
+
+USERS (Protected)
+-----------------
+GET    /api/users/profile    Get current user
+PUT    /api/users            Update own profile (body: name?, password?, branch?)
+GET    /api/users            [Admin] List all users (query: role, branch, page, limit)
+GET    /api/users/:id        [Admin] Get user by ID
+POST   /api/users            [Admin] Create user (body: name, password, role (String or Array), branch?)
+PUT    /api/users/:id        [Admin] Update user (body: name?, password?, role? (String or Array), branch?)
+DELETE /api/users/:id        [Admin] Delete user
+
+ROLES (Admin Only)
+------------------
+GET    /api/roles            List all roles (query: page, limit)
+GET    /api/roles/:id        Get role by ID
+POST   /api/roles            Create role (body: roleName, permission[])
+PUT    /api/roles/:id        Update role (body: roleName?, permission[]?)
+DELETE /api/roles/:id        Delete role
+
+BRANCHES (Admin Only)
+---------------------
+GET    /api/branches         List all branches (query: page, limit)
+GET    /api/branches/:id     Get branch by ID
+POST   /api/branches         Create branch (body: branch)
+PUT    /api/branches/:id     Update branch (body: branch)
+DELETE /api/branches/:id     Delete branch
+
+ITEMS (Protected)
+-----------------
+GET    /api/items            List items (query: category, page, limit)
+GET    /api/items/:id        Get item by ID
+POST   /api/items            Create item (body: itemType, category?, price)
+PUT    /api/items/:id        Update item (body: itemType?, category?, price?)
+DELETE /api/items/:id        Delete item
+
+ORDERS (Protected)
+------------------
+GET    /api/orders           List orders with filters
+                             Query params:
+                             - status: received | completed | delivered
+                             - paymentStatus: unpaid | partial | paid
+                             - today: true (get today's orders)
+                             - fromDate: YYYY-MM-DD (start date)
+                             - toDate: YYYY-MM-DD (end date)
+                             - page, limit (pagination)
+
+GET    /api/orders/:id       Get order by ID
+POST   /api/orders           Create order
+                             Body: { customerName, customerPhone, 
+                                    customerEmail?, items[], totalAmount,
+                                    status?, paymentStatus?, notes? }
+PUT    /api/orders/:id       Update order (same fields as POST, all optional)
+DELETE /api/orders/:id       Delete order
+
+CHATS (Protected)
+-----------------
+POST   /api/chats/direct     Start direct chat (body: recipientId)
+POST   /api/chats/branch     Join branch chat room
+POST   /api/chats/admin      Join admin chat room
+GET    /api/chats            Get all user's chats (query: page, limit)
+GET    /api/chats/:id        Get single chat by ID
+PUT    /api/chats/:id/leave  Leave chat
+
+MESSAGES (Protected)
+--------------------
+POST   /api/messages         Send message (body: chatId, message, messageType?)
+GET    /api/messages/chat/:chatId  Get messages for chat (query: page, limit)
+PUT    /api/messages/:id     Edit message (body: message)
+PUT    /api/messages/:id/read  Mark message as read
+DELETE /api/messages/:id     Delete message
+
+HEALTH
+------
+GET    /                     API status
+GET    /api/health           Health check
+
+================================================================================
+AUTHENTICATION HEADER
+================================================================================
+All protected endpoints require:
+Authorization: Bearer <jwt-token>
+
+JWT Token contains:
+- id: User ID
+- name: Username
+- roles: Array of role names
+- permissions: Array of unique permissions from all roles
+- branch: User's branch
+
+================================================================================
+PERMISSIONS SYSTEM
+================================================================================
+Available Permissions:
+- order: Can manage orders
+- status: Can update order status
+- price: Can modify pricing
+- receipt: Can generate receipts
+- user: Can manage users (admin only)
+- configuration: Can modify system settings
+
+Permission Deduplication:
+- When a user has multiple roles, permissions are collected from all roles
+- Duplicate permissions are automatically removed
+- User gets unique permissions only (no duplicates in JWT token)
+- Example: If user has "admin" and "cashier" roles, and both have "order" permission,
+  the user will only get "order" permission once in their token
+
+================================================================================
+QUICK START
+================================================================================
+
+1. Create roles first:
+   POST /api/roles
+   { "roleName": "admin", "permission": ["order", "status", "price", "receipt", "user", "configuration"] }
+   
+   POST /api/roles
+   { "roleName": "cashier", "permission": ["order", "receipt"] }
+
+2. Register with role name(s):
+   POST /api/auth/register
+   { "name": "admin", "password": "admin123", "password2": "admin123", "role": ["admin", "cashier"], "branch": "Main Branch" }
+   
+   Or single role:
+   { "name": "user", "password": "user123", "password2": "user123", "role": "cashier" }
+
+3. Use token in all requests:
+   Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+4. Create branches:
+   POST /api/branches
+   { "branch": "Main Branch" }
+
+5. Create items and orders as needed
+
+6. Start chatting:
+   - Direct chat: POST /api/chats/direct { "recipientId": "USER_ID" }
+   - Branch chat: POST /api/chats/branch
+   - Admin chat: POST /api/chats/admin
+   - Send message: POST /api/messages { "chatId": "CHAT_ID", "message": "Hello!" }
+
+7. Real-time Socket.IO connection:
+   - Connect: io('http://localhost:3000', { auth: { token: 'JWT_TOKEN' } })
+   - Join chat: socket.emit('join_chat', { chatId: 'CHAT_ID' })
+   - Send message: socket.emit('send_message', { chatId: 'CHAT_ID', message: 'Hello!' })
+   - Listen for messages: socket.on('new_message', (data) => { ... })
+
+================================================================================
+ERROR CODES
+================================================================================
+200 - Success
+201 - Created
+400 - Bad Request (validation error)
+401 - Unauthorized (missing/invalid token)
+403 - Forbidden (insufficient permissions)
+404 - Not Found
+409 - Conflict (duplicate resource)
+500 - Server Error
+
+================================================================================
+ENVIRONMENT SETUP
+================================================================================
+Create .env file:
+JWT_SECRET=your-secret-key
+PORT=3000
+MONGO_URI=mongodb://localhost:27017/laundry_db
+
+================================================================================
+======
+==========================================================================
+SOCKET.IO REAL-TIME EVENTS
+================================================================================
+
+Client to Server Events:
+- join_chat: { chatId }
+- leave_chat: { chatId }
+- send_message: { chatId, message, messageType? }
+- edit_message: { messageId, newMessage }
+- delete_message: { messageId }
+- typing_start: { chatId }
+- typing_stop: { chatId }
+- mark_as_read: { messageId }
+
+Server to Client Events:
+- new_message: { messageId, chatId, sender, message, messageType, createdAt }
+- message_edited: { messageId, message, isEdited, editedAt }
+- message_deleted: { messageId, chatId }
+- user_typing: { userId, userName, chatId }
+- user_stopped_typing: { userId, chatId }
+- message_read: { messageId, readBy, userName, readAt }
+- user_online: { userId, userInfo }
+- user_offline: { userId, userInfo, lastSeen }
+- online_users: [{ socketId, userInfo, lastSeen }]
+- new_chat: { chatId, chatType, participants, createdAt }
+
+Authentication:
+- Connect with JWT token in auth object: { auth: { token: 'JWT_TOKEN' } }
+- Server validates token and joins user to appropriate rooms
+
+Room Structure:
+- user_{userId}: Personal room for each user
+- chat_{chatId}: Room for each chat
+- branch_{branchName}: Room for branch users
+- admin_room: Room for admin users
+
+================================================================================
