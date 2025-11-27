@@ -1,7 +1,7 @@
 ================================================================================
-                    LAUNDRY BACKEND API GUIDE
+                          LAUNDRY BACKEND API
 ================================================================================
-BASE URL: http://localhost:3000
+BASE URL: http://localhost:5000
 
 ================================================================================
 DATABASE STRUCTURE
@@ -10,178 +10,188 @@ DATABASE STRUCTURE
 USER
 - name (String, unique, required)
 - password (String, hashed, required)
-- role (Array of String: ["admin", "salesperson", "cashier", "operator", "special"])
-- branch (String, optional)
+- role (Array of String)
+- branch (ObjectId ref Branch)
 - createdAt, updatedAt (Date)
 
 ROLE
-- roleName (String: "admin" | "salesperson" | "cashier" | "operator" | "special")
-- permission (Array: ["order", "status", "price", "receipt", "user", "configuration"], default: [])
+- roleName (String, required)
+- permissions (Array of String: ["user", "customer", "item", "order", "invoice", "price", "branch", "role"])
 - createdAt, updatedAt (Date)
 
 BRANCH
-- branch (String, required)
+- branchName (String, required)
+- location (String)
+- phone (String)
+- createdAt, updatedAt (Date)
+
+CUSTOMER
+- customer_code (Number, auto-generated, unique)
+- name (String, required)
+- phone (String, required)
+- address (String)
 - createdAt, updatedAt (Date)
 
 ITEM
-- itemType (String, required)
-- category (String: "clothing" | "home" | "accessories")
-- price (Number, required)
+- itemName (String, required)
+- category (String: "clothing" | "home" | "accessories" | "other")
+- wash (Number, default: 0)
+- iron (Number, default: 0)
+- repair (Number, default: 0)
 - createdAt, updatedAt (Date)
 
 ORDER
-- customerName, customerPhone (String, required)
-- customerEmail (String, optional)
-- items: [{ itemType, quantity, price }]
+- order_code (Number, auto-generated, unique)
+- customer (ObjectId ref Customer, required)
+- items: [{ item (ObjectId ref Item), quantity, color, service: ["wash"|"iron"|"repair"], price }]
 - totalAmount (Number, required)
 - status (String: "received" | "completed" | "delivered", default: "received")
-- paymentStatus (String: "unpaid" | "partial" | "paid", default: "unpaid")
-- notes (String, optional)
-- createdBy (User ref)
+- paid (Number, default: 0)
+- createdBy (ObjectId ref User, required)
+- estimated_delivery (Date)
+- createdAt, updatedAt (Date)
+
+INVOICE
+- order (ObjectId ref Order, required)
+- ncf (String)
+- location (String)
+- itbis (Number, default: 0)
+- discount (Number, default: 0)
+- total (Number, required)
+- paid (Number, default: 0)
+- remain (Number, auto-calculated)
+- cash_amount (Number)
+- card_amount (Number)
+- bank_tranfer_amount (Number)
+- delivery_date (Date)
 - createdAt, updatedAt (Date)
 
 CHAT
 - chatType (String: "direct" | "branch" | "admin", required)
-- participants (Array of User refs)
-- branch (String, required for branch chats)
-- lastMessage (Message ref)
-- lastActivity (Date)
+- participants (Array of ObjectId ref User)
+- branch (ObjectId ref Branch, required for branch chats)
+- lastMessage (ObjectId ref Message)
+- lastActivity (Date, default: now)
 - isActive (Boolean, default: true)
 - createdAt, updatedAt (Date)
 
 MESSAGE
-- chat (Chat ref, required)
-- sender (User ref, required)
+- chat (ObjectId ref Chat, required)
+- sender (ObjectId ref User, required)
 - message (String, required)
 - messageType (String: "text" | "file" | "image", default: "text")
-- readBy: [{ user: User ref, readAt: Date }]
+- readBy: [{ user: ObjectId ref User, readAt: Date }]
 - isEdited (Boolean, default: false)
 - editedAt (Date)
 - createdAt, updatedAt (Date)
+
+COUNTER
+- name (String: "customer_code" | "order_code")
+- value (Number, auto-increment)
 
 ================================================================================
 KEY FUNCTIONALITIES
 ================================================================================
 
-1. AUTHENTICATION
-   - JWT-based authentication (24h expiration)
-   - Role-based access control with permissions
-   - Password hashing with bcrypt
-   - Token includes role and permissions data
+1. AUTHENTICATION - JWT-based with role/permission system
+2. USER MANAGEMENT - CRUD with branch assignment
+3. CUSTOMER MANAGEMENT - Auto-generated customer codes
+4. ITEM MANAGEMENT - Service-based pricing (wash, iron, repair)
+5. ORDER MANAGEMENT - Multi-item orders with auto-generated codes
+6. INVOICE MANAGEMENT - Multiple invoices per order, auto-calculate remain
+7. PAYMENT TRACKING - Auto-update order status based on payments
+8. CHAT SYSTEM - Real-time messaging (direct, branch, admin)
+9. ROLE & PERMISSION - Dynamic permission system
+10. BRANCH SYSTEM - Multi-branch support
 
-2. USER MANAGEMENT
-   - Any user: View own profile, update own profile
-   - Admin only: Full CRUD on all users
-
-3. ROLE MANAGEMENT
-   - Admin only: Full CRUD on roles and permissions
-   - Define custom permissions for each role
-
-4. BRANCH MANAGEMENT
-   - Admin only: Full CRUD on branches
-
-5. ITEM MANAGEMENT
-   - Authenticated users: Full CRUD on items
-   - Pagination and category filtering
-
-6. ORDER MANAGEMENT
-   - Authenticated users: Full CRUD on orders
-   - Advanced filtering: status, payment, date range, today's orders
-   - Pagination support
-
-7. CHAT SYSTEM (Real-time with Socket.IO)
-   - Direct messaging between any two users
-   - Branch chat rooms (all users in same branch)
-   - Admin chat (all users can communicate with admins)
-   - Message editing, deletion, and read receipts
-   - Real-time messaging with Socket.IO
-   - Typing indicators and online/offline status
-   - Message read receipts in real-time
+PAYMENT LOGIC:
+- Order paid = sum of all invoice payments
+- Remain = order total - total paid
+- Status: received → completed (partial) → delivered (full payment)
 
 ================================================================================
 API ENDPOINTS
 ================================================================================
 
-AUTH (Public)
--------------
-POST   /api/auth/register    Body: { name, password, password2, role? (String or Array), branch? }
-POST   /api/auth/login       Body: { name, password }
-→ Returns: { user, token } (token includes roles array and permissions array)
+AUTH
+----
+POST /api/auth/register - Body: { name, password, password2, role[], branch }
+POST /api/auth/login - Body: { name, password } → Returns: { user, token }
 
-USERS (Protected)
------------------
-GET    /api/users/profile    Get current user
-PUT    /api/users            Update own profile (body: name?, password?, branch?)
-GET    /api/users            [Admin] List all users (query: role, branch, page, limit)
-GET    /api/users/:id        [Admin] Get user by ID
-POST   /api/users            [Admin] Create user (body: name, password, role (String or Array), branch?)
-PUT    /api/users/:id        [Admin] Update user (body: name?, password?, role? (String or Array), branch?)
-DELETE /api/users/:id        [Admin] Delete user
+USERS
+-----
+GET    /api/users/profile - Get current user with branch
+GET    /api/users - List users (query: role, branch, page, limit)
+GET    /api/users/:id - Get user by ID
+POST   /api/users - Create user (body: name, password, password2, role[], branch)
+PUT    /api/users - Update own profile
+PUT    /api/users/:id - Update user (admin)
+DELETE /api/users/:id - Delete user (admin)
 
-ROLES (Admin Only)
-------------------
-GET    /api/roles            List all roles (query: page, limit)
-GET    /api/roles/:id        Get role by ID
-POST   /api/roles            Create role (body: roleName, permission[])
-PUT    /api/roles/:id        Update role (body: roleName?, permission[]?)
-DELETE /api/roles/:id        Delete role
+CUSTOMERS
+---------
+GET    /api/customers - List customers (query: page, limit)
+GET    /api/customers/:id - Get customer
+POST   /api/customers - Create (body: name, phone, address) → Auto-generates customer_code
+PUT    /api/customers/:id - Update customer
+DELETE /api/customers/:id - Delete customer
 
-BRANCHES (Admin Only)
----------------------
-GET    /api/branches         List all branches (query: page, limit)
-GET    /api/branches/:id     Get branch by ID
-POST   /api/branches         Create branch (body: branch)
-PUT    /api/branches/:id     Update branch (body: branch)
-DELETE /api/branches/:id     Delete branch
+ITEMS
+-----
+GET    /api/items - List items (query: category, page, limit)
+GET    /api/items/:id - Get item
+POST   /api/items - Create (body: itemName, category, wash, iron, repair)
+PUT    /api/items/:id - Update item
+DELETE /api/items/:id - Delete item
 
-ITEMS (Protected)
------------------
-GET    /api/items            List items (query: category, page, limit)
-GET    /api/items/:id        Get item by ID
-POST   /api/items            Create item (body: itemType, category?, price)
-PUT    /api/items/:id        Update item (body: itemType?, category?, price?)
-DELETE /api/items/:id        Delete item
-
-ORDERS (Protected)
-------------------
-GET    /api/orders           List orders with filters
-                             Query params:
-                             - status: received | completed | delivered
-                             - paymentStatus: unpaid | partial | paid
-                             - today: true (get today's orders)
-                             - fromDate: YYYY-MM-DD (start date)
-                             - toDate: YYYY-MM-DD (end date)
-                             - page, limit (pagination)
-
-GET    /api/orders/:id       Get order by ID
-POST   /api/orders           Create order
-                             Body: { customerName, customerPhone, 
-                                    customerEmail?, items[], totalAmount,
-                                    status?, paymentStatus?, notes? }
-PUT    /api/orders/:id       Update order (same fields as POST, all optional)
-DELETE /api/orders/:id       Delete order
-
-CHATS (Protected)
------------------
-POST   /api/chats/direct     Start direct chat (body: recipientId)
-POST   /api/chats/branch     Join branch chat room
-POST   /api/chats/admin      Join admin chat room
-GET    /api/chats            Get all user's chats (query: page, limit)
-GET    /api/chats/:id        Get single chat by ID
-PUT    /api/chats/:id/leave  Leave chat
-
-MESSAGES (Protected)
---------------------
-POST   /api/messages         Send message (body: chatId, message, messageType?)
-GET    /api/messages/chat/:chatId  Get messages for chat (query: page, limit)
-PUT    /api/messages/:id     Edit message (body: message)
-PUT    /api/messages/:id/read  Mark message as read
-DELETE /api/messages/:id     Delete message
-
-HEALTH
+ORDERS
 ------
-GET    /                     API status
-GET    /api/health           Health check
+GET    /api/orders - List orders (query: status, order_code, customerName, customerPhone, fromDate, toDate, today, page, limit)
+GET    /api/orders/:id - Get order with populated customer, items, createdBy
+POST   /api/orders - Create (body: customer, items[{item, quantity, color, service[], price}], totalAmount, status, paid, estimated_delivery) → Auto-generates order_code
+PUT    /api/orders/:id - Update order
+DELETE /api/orders/:id - Delete order
+
+INVOICES
+--------
+GET    /api/invoices - List invoices (query: order, customer_code, customerName, customerPhone, fromDate, toDate, today, page, limit)
+GET    /api/invoices/:id - Get invoice
+POST   /api/invoices - Create (body: order, ncf, location, itbis, discount, total, paid, cash_amount, card_amount, bank_tranfer_amount, delivery_date) → Auto-calculates remain, updates order paid & status
+PUT    /api/invoices/:id - Update invoice → Recalculates remain for all invoices of that order
+DELETE /api/invoices/:id - Delete invoice → Recalculates order paid & remain
+
+CHATS
+-----
+POST /api/chats/direct - Start direct chat (body: recipientId)
+POST /api/chats/branch - Join branch chat
+POST /api/chats/admin - Join admin chat
+GET  /api/chats - Get user's chats (query: page, limit)
+GET  /api/chats/:id - Get chat by ID
+PUT  /api/chats/:id/leave - Leave chat
+
+MESSAGES
+--------
+POST   /api/messages - Send message (body: chatId, message, messageType)
+GET    /api/messages/chat/:chatId - Get messages (query: page, limit)
+PUT    /api/messages/:id - Edit message (body: message)
+PUT    /api/messages/:id/read - Mark as read
+DELETE /api/messages/:id - Delete message
+
+BRANCHES
+--------
+GET    /api/branches - List branches (query: page, limit)
+GET    /api/branches/:id - Get branch
+POST   /api/branches - Create (body: branchName, location, phone)
+PUT    /api/branches/:id - Update branch
+DELETE /api/branches/:id - Delete branch
+
+ROLES
+-----
+GET    /api/roles - List roles (query: page, limit)
+GET    /api/roles/:id - Get role
+POST   /api/roles - Create (body: roleName, permissions[])
+PUT    /api/roles/:id - Update role
+DELETE /api/roles/:id - Delete role
 
 ================================================================================
 AUTHENTICATION HEADER
@@ -197,61 +207,36 @@ JWT Token contains:
 - branch: User's branch
 
 ================================================================================
-PERMISSIONS SYSTEM
+PERMISSIONS
 ================================================================================
-Available Permissions:
-- order: Can manage orders
-- status: Can update order status
-- price: Can modify pricing
-- receipt: Can generate receipts
-- user: Can manage users (admin only)
-- configuration: Can modify system settings
-
-Permission Deduplication:
-- When a user has multiple roles, permissions are collected from all roles
-- Duplicate permissions are automatically removed
-- User gets unique permissions only (no duplicates in JWT token)
-- Example: If user has "admin" and "cashier" roles, and both have "order" permission,
-  the user will only get "order" permission once in their token
+Available: user, customer, item, order, invoice, price, branch, role
+- Permissions are assigned to roles
+- Users can have multiple roles
+- Middleware checks permissions for protected routes
 
 ================================================================================
 QUICK START
 ================================================================================
 
-1. Create roles first:
-   POST /api/roles
-   { "roleName": "admin", "permission": ["order", "status", "price", "receipt", "user", "configuration"] }
-   
-   POST /api/roles
-   { "roleName": "cashier", "permission": ["order", "receipt"] }
+1. Create role: POST /api/roles { "roleName": "admin", "permissions": ["user", "customer", "item", "order", "invoice", "price", "branch", "role"] }
 
-2. Register with role name(s):
-   POST /api/auth/register
-   { "name": "admin", "password": "admin123", "password2": "admin123", "role": ["admin", "cashier"], "branch": "Main Branch" }
-   
-   Or single role:
-   { "name": "user", "password": "user123", "password2": "user123", "role": "cashier" }
+2. Create branch: POST /api/branches { "branchName": "Main Branch", "location": "Downtown", "phone": "123-456" }
 
-3. Use token in all requests:
-   Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+3. Register: POST /api/auth/register { "name": "admin", "password": "admin123", "password2": "admin123", "role": ["admin"], "branch": "BRANCH_ID" }
 
-4. Create branches:
-   POST /api/branches
-   { "branch": "Main Branch" }
+4. Login: POST /api/auth/login { "name": "admin", "password": "admin123" } → Get token
 
-5. Create items and orders as needed
+5. Use token: Authorization: Bearer YOUR_TOKEN
 
-6. Start chatting:
-   - Direct chat: POST /api/chats/direct { "recipientId": "USER_ID" }
-   - Branch chat: POST /api/chats/branch
-   - Admin chat: POST /api/chats/admin
-   - Send message: POST /api/messages { "chatId": "CHAT_ID", "message": "Hello!" }
+6. Create customer: POST /api/customers { "name": "John", "phone": "123-456", "address": "123 St" }
 
-7. Real-time Socket.IO connection:
-   - Connect: io('http://localhost:3000', { auth: { token: 'JWT_TOKEN' } })
-   - Join chat: socket.emit('join_chat', { chatId: 'CHAT_ID' })
-   - Send message: socket.emit('send_message', { chatId: 'CHAT_ID', message: 'Hello!' })
-   - Listen for messages: socket.on('new_message', (data) => { ... })
+7. Create item: POST /api/items { "itemName": "Shirt", "category": "clothing", "wash": 5, "iron": 3, "repair": 10 }
+
+8. Create order: POST /api/orders { "customer": "CUSTOMER_ID", "items": [{"item": "ITEM_ID", "quantity": 2, "service": ["wash", "iron"], "price": 16}], "totalAmount": 16 }
+
+9. Create invoice: POST /api/invoices { "order": "ORDER_ID", "total": 16, "paid": 10 } → Order paid=10, remain=6, status="completed"
+
+10. Chat: POST /api/chats/direct { "recipientId": "USER_ID" } → POST /api/messages { "chatId": "CHAT_ID", "message": "Hello!" }
 
 ================================================================================
 ERROR CODES
@@ -266,16 +251,16 @@ ERROR CODES
 500 - Server Error
 
 ================================================================================
-ENVIRONMENT SETUP
+ENVIRONMENT
 ================================================================================
-Create .env file:
+.env file:
 JWT_SECRET=your-secret-key
-PORT=3000
+PORT=5000
 MONGO_URI=mongodb://localhost:27017/laundry_db
 
+Run: npm install → npm run dev
+
 ================================================================================
-======
-==========================================================================
 SOCKET.IO REAL-TIME EVENTS
 ================================================================================
 
