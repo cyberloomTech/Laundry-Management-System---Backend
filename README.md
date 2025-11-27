@@ -38,6 +38,18 @@ npm start      # Production
 
 Server runs at: http://localhost:3000
 
+## Frontend
+
+The React frontend is located in the `client` folder. To run it:
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Frontend runs at: http://localhost:5000
+
 ## API Documentation
 
 See `guide.txt` for complete API documentation.

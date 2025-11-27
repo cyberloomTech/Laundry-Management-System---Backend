@@ -7,22 +7,24 @@ const router = express.Router();
 // CREATE - Add new item
 router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
-    const { itemType, category, price } = req.body;
+    const { itemName, category, wash, iron, repair } = req.body;
 
     // Validation
-    if (!itemType || !price) {
-      return res.status(400).json({ error: 'Item type and price are required' });
+    if (!itemName) {
+      return res.status(400).json({ error: 'Item name is required' });
     }
 
-    if (price < 0) {
-      return res.status(400).json({ error: 'Price must be a positive number' });
+    if (wash < 0 || iron < 0 || repair < 0) {
+      return res.status(400).json({ error: 'Prices must be positive numbers' });
     }
 
     // Create new item
     const item = new Item({
-      itemType,
+      itemName,
       category,
-      price
+      wash: wash || 0,
+      iron: iron || 0,
+      repair: repair || 0
     });
 
     await item.save();
@@ -93,7 +95,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // UPDATE - Update item
 router.put('/:id', authenticateToken, requirePermission('price'), async (req, res) => {
   try {
-    const { itemType, category, price } = req.body;
+    const { itemName, category, wash, iron, repair } = req.body;
 
     const item = await Item.findById(req.params.id);
 
@@ -102,14 +104,18 @@ router.put('/:id', authenticateToken, requirePermission('price'), async (req, re
     }
 
     // Validation
-    if (price !== undefined && price < 0) {
-      return res.status(400).json({ error: 'Price must be a positive number' });
+    if ((wash !== undefined && wash < 0) || 
+        (iron !== undefined && iron < 0) || 
+        (repair !== undefined && repair < 0)) {
+      return res.status(400).json({ error: 'Prices must be positive numbers' });
     }
 
     // Update fields
-    if (itemType) item.itemType = itemType;
+    if (itemName) item.itemName = itemName;
     if (category) item.category = category;
-    if (price !== undefined) item.price = price;
+    if (wash !== undefined) item.wash = wash;
+    if (iron !== undefined) item.iron = iron;
+    if (repair !== undefined) item.repair = repair;
 
     await item.save();
 

@@ -44,7 +44,12 @@ router.post('/direct', async (req, res) => {
     });
 
     await chat.save();
-    await chat.populate('participants', 'name role branch');
+    await chat.populate({
+      path: 'participants',
+      select: 'name role branch',
+      populate: { path: 'branch' }
+    });
+    await chat.populate('lastMessage');
 
     // Emit new chat creation to participants via Socket.IO
     const io = req.app.get('io');
@@ -99,7 +104,13 @@ router.post('/branch', async (req, res) => {
     }
 
     await branchChat.save();
-    await branchChat.populate('participants', 'name role branch');
+    await branchChat.populate({
+      path: 'participants',
+      select: 'name role branch',
+      populate: { path: 'branch' }
+    });
+    await branchChat.populate('branch');
+    await branchChat.populate('lastMessage');
 
     res.json({
       message: 'Joined branch chat successfully',
@@ -133,7 +144,12 @@ router.post('/admin', async (req, res) => {
     }
 
     await adminChat.save();
-    await adminChat.populate('participants', 'name role branch');
+    await adminChat.populate({
+      path: 'participants',
+      select: 'name role branch',
+      populate: { path: 'branch' }
+    });
+    await adminChat.populate('lastMessage');
 
     res.json({
       message: 'Joined admin chat successfully',
@@ -155,7 +171,12 @@ router.get('/', async (req, res) => {
       participants: req.user._id,
       isActive: true
     })
-    .populate('participants', 'name role branch')
+    .populate({
+      path: 'participants',
+      select: 'name role branch',
+      populate: { path: 'branch' }
+    })
+    .populate('branch')
     .populate('lastMessage')
     .sort({ lastActivity: -1 })
     .skip(skip)
@@ -185,7 +206,12 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const chat = await Chat.findById(req.params.id)
-      .populate('participants', 'name role branch')
+      .populate({
+        path: 'participants',
+        select: 'name role branch',
+        populate: { path: 'branch' }
+      })
+      .populate('branch')
       .populate('lastMessage');
 
     if (!chat) {

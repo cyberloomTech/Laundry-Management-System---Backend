@@ -16,7 +16,8 @@ const UserSchema = new mongoose.Schema({
     type: String
   }],
   branch:{
-    type: String
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Branch'
   }
 }, {timestamps: true});
 

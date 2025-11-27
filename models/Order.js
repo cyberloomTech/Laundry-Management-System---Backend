@@ -1,30 +1,35 @@
 const mongoose = require('mongoose');
+const Counter = require('./Counter');
 
 const OrderSchema = new mongoose.Schema({
-  customerName: {
-    type: String,
-    required: true,
-    trim: true
+  order_code: {
+    type: Number,
+    unique: true
   },
-  customerPhone: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  customerEmail: {
-    type: String,
-    trim: true
+  customer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Customer',
+    required: true
   },
   items: [{
-    itemType: {
-      type: String,
+    item: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Item',
       required: true
     },
     quantity: {
       type: Number,
       required: true,
-      min: 1
+      min: 1,
+      default: 1
     },
+    color: {
+      type: String
+    },
+    service: [{
+      type: String,
+      enum: ['wash', 'iron', 'repair']
+    }],
     price: {
       type: Number,
       required: true,
@@ -41,25 +46,29 @@ const OrderSchema = new mongoose.Schema({
     enum: ['received', 'completed', 'delivered'],
     default: 'received'
   },
-  paymentStatus: {
-    type: String,
-    enum: ['unpaid', 'partial', 'paid'],
-    default: 'unpaid'
-  },
-  notes: {
-    type: String,
-    trim: true
+  paid: {
+    type: Number,
+    default: 0
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
+  },
+  estimated_delivery: {
+    type: Date
   }
-}, {timestamps: true});
+}, { timestamps: true });
 
-// Update the updatedAt timestamp before saving
-OrderSchema.pre('save', function() {
-  this.updatedAt = Date.now();
+OrderSchema.pre('save', async function () {
+  if (this.isNew) {
+    const counter = await Counter.findOneAndUpdate(
+      { name: 'order_code' }, // unique counter for Order
+      { $inc: { value: 1 } },
+      { new: true, upsert: true }
+    );
+    this.order_code = counter.value;
+  }
 });
 
 module.exports = mongoose.model('Order', OrderSchema);

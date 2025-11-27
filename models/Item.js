@@ -1,19 +1,29 @@
 const mongoose = require('mongoose');
 
 const ItemSchema = new mongoose.Schema({
-  itemType: {
+  itemName: {
     type: String,
     required: true,
     trim: true
   },
   category: {
     type: String,
-    enum: ['clothing', 'home', 'accessories'],
+    enum: ['clothing', 'home', 'accessories', 'other'],
     trim: true
   },
-  price: {
+  wash: {
     type: Number,
-    required: true,
+    default: 0,
+    min: 0
+  },
+  iron: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  repair: {
+    type: Number,
+    default: 0,
     min: 0
   }
 }, {timestamps: true});

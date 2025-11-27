@@ -10,6 +10,8 @@ const branchRoutes = require('./routes/branches');
 const roleRoutes = require('./routes/roles');
 const chatRoutes = require('./routes/chats');
 const messageRoutes = require('./routes/messages');
+const customerRoutes = require('./routes/customers');
+const invoiceRoutes = require('./routes/invoices');
 
 const app = express();
 const server = http.createServer(app);
@@ -55,6 +57,8 @@ app.use('/api/branches', branchRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/invoices', invoiceRoutes);
 
 // Socket.IO connection handling
 require('./socket/socketHandler')(io);

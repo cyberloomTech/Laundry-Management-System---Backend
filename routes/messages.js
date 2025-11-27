@@ -36,7 +36,11 @@ router.post('/', async (req, res) => {
     });
 
     await newMessage.save();
-    await newMessage.populate('sender', 'name role branch');
+    await newMessage.populate({
+      path: 'sender',
+      select: 'name role branch',
+      populate: { path: 'branch' }
+    });
 
     // Update chat's last message and activity
     chat.lastMessage = newMessage._id;
@@ -85,7 +89,11 @@ router.get('/chat/:chatId', async (req, res) => {
     }
 
     const messages = await Message.find({ chat: chatId })
-      .populate('sender', 'name role branch')
+      .populate({
+        path: 'sender',
+        select: 'name role branch',
+        populate: { path: 'branch' }
+      })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -135,7 +143,11 @@ router.put('/:id', async (req, res) => {
     messageDoc.editedAt = new Date();
 
     await messageDoc.save();
-    await messageDoc.populate('sender', 'name role branch');
+    await messageDoc.populate({
+      path: 'sender',
+      select: 'name role branch',
+      populate: { path: 'branch' }
+    });
 
     // Emit real-time message edit via Socket.IO
     const io = req.app.get('io');

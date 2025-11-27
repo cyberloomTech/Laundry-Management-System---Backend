@@ -2,6 +2,7 @@
   "name": "laundry_backend",
   "version": "1.0.0",
   "description": "laundry backend",
+  "author": "Rex",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

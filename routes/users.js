@@ -1,15 +1,29 @@
 const express = require('express');
 const User = require('../models/User');
 const Role = require('../models/Role');
+const Branch = require('../models/Branch');
 const { authenticateToken, requireRole, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
 
 // Get current user profile (any authenticated user)
-router.get('/profile', authenticateToken, (req, res) => {
-  res.json({
-    user: req.user.toJSON()
-  });
+router.get('/profile', authenticateToken, async (req, res) => {
+  try {
+    // Fetch user with populated branch
+    const user = await User.findById(req.user._id)
+      .populate('branch');
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      user
+    });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // CREATE - Add new user (admin only)
@@ -37,10 +51,20 @@ router.post('/', authenticateToken, requirePermission('user'), async (req, res) 
     }
 
     // Validate roles (if provided)
-    for (let oneRole of role) {
-      const validRole = await Role.findOne({ roleName: oneRole });
-      if (!validRole) {
-        return res.status(400).json({ error: `${oneRole} role does not exist` });
+    if (role && Array.isArray(role)) {
+      for (let oneRole of role) {
+        const validRole = await Role.findOne({ roleName: oneRole });
+        if (!validRole) {
+          return res.status(400).json({ error: `${oneRole} role does not exist` });
+        }
+      }
+    }
+
+    // Validate branch (if provided)
+    if (branch) {
+      const validBranch = await Branch.findById(branch);
+      if (!validBranch) {
+        return res.status(400).json({ error: 'This branch does not exist' });
       }
     }
 
@@ -48,13 +72,14 @@ router.post('/', authenticateToken, requirePermission('user'), async (req, res) 
     const user = new User({
       name,
       password,
-      role,
+      role: role || [],
       branch
     });
 
     await user.save();
 
-    // No need to populate since roles are now strings
+    // Populate branch before sending response
+    await user.populate('branch');
 
     res.status(201).json({
       message: 'User created successfully',
@@ -80,6 +105,7 @@ router.get('/', authenticateToken, async (req, res) => {
     const skip = (page - 1) * limit;
 
     const users = await User.find(filter)
+      .populate('branch')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -104,7 +130,8 @@ router.get('/', authenticateToken, async (req, res) => {
 // READ - Get single user by ID
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id)
+      .populate('branch');
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -146,6 +173,10 @@ router.put('/', authenticateToken, async (req, res) => {
 
     // Update branch if provided
     if (branch !== undefined) {
+      const validBranch = await Branch.findById(branch);
+      if (!validBranch) {
+        return res.status(400).json({ error: 'This branch does not exist' });
+      }
       user.branch = branch;
     }
 
@@ -192,21 +223,30 @@ router.put('/:id', authenticateToken, requirePermission('user'), async (req, res
       user.password = password;
     }
 
-    // Update roles if exist
-    for (let oneRole of role) {
-      const validRole = await Role.findOne({ roleName: oneRole });
-      if (!validRole) {
-        return res.status(400).json({ error: `${oneRole} role does not exist` });
+    // Update roles if provided
+    if (role && Array.isArray(role)) {
+      for (let oneRole of role) {
+        const validRole = await Role.findOne({ roleName: oneRole });
+        if (!validRole) {
+          return res.status(400).json({ error: `${oneRole} role does not exist` });
+        }
       }
+      user.role = role;
     }
-    user.role = role;
 
     // Update branch if provided
     if (branch !== undefined) {
+      const validBranch = await Branch.findById(branch);
+      if (!validBranch) {
+        return res.status(400).json({ error: 'This branch does not exist' });
+      }
       user.branch = branch;
     }
 
     await user.save();
+
+    // Populate branch before sending response
+    await user.populate('branch');
 
     res.json({
       message: 'User updated successfully',

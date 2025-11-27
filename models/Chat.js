@@ -11,7 +11,8 @@ const ChatSchema = new mongoose.Schema({
     ref: 'User'
   }],
   branch: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Branch',
     // Only required for branch chats
     required: function() {
       return this.chatType === 'branch';
