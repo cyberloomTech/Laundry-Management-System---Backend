@@ -92,6 +92,67 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// BULK UPDATE - Update multiple items at once
+router.put('/', authenticateToken, requirePermission('price'), async (req, res) => {
+  try {
+    const { updates } = req.body;
+
+    // Validation
+    if (!updates || !Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({ error: 'Updates array is required and must not be empty' });
+    }
+
+    // Validate each update
+    for (const update of updates) {
+      if (!update.itemName) {
+        return res.status(400).json({ error: 'Each update must have an itemName' });
+      }
+
+      // Check if at least one price field is provided
+      if (update.wash === undefined && update.iron === undefined && update.repair === undefined) {
+        return res.status(400).json({ error: `Update for ${update.itemName} must include at least one price field (wash, iron, or repair)` });
+      }
+
+      // Validate prices are positive
+      if ((update.wash !== undefined && update.wash < 0) ||
+          (update.iron !== undefined && update.iron < 0) ||
+          (update.repair !== undefined && update.repair < 0)) {
+        return res.status(400).json({ error: `Prices for ${update.itemName} must be positive numbers` });
+      }
+    }
+
+    // Build bulk operations
+    const operations = updates.map(item => {
+      const updateFields = {};
+      if (item.wash !== undefined) updateFields.wash = item.wash;
+      if (item.iron !== undefined) updateFields.iron = item.iron;
+      if (item.repair !== undefined) updateFields.repair = item.repair;
+
+      return {
+        updateOne: {
+          filter: { itemName: item.itemName },
+          update: { $set: updateFields }
+        }
+      };
+    });
+
+    // Execute bulk write
+    const result = await Item.bulkWrite(operations);
+
+    res.json({
+      message: 'Items updated successfully',
+      result: {
+        matchedCount: result.matchedCount,
+        modifiedCount: result.modifiedCount,
+        upsertedCount: result.upsertedCount
+      }
+    });
+  } catch (error) {
+    console.error('Bulk update items error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // UPDATE - Update item
 router.put('/:id', authenticateToken, requirePermission('price'), async (req, res) => {
   try {

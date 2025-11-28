@@ -91,15 +91,28 @@ router.post('/', authenticateToken, requirePermission('user'), async (req, res) 
   }
 });
 
-// READ - Get all users
+// READ - Get all users with search
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { role, branch, page = 1, limit = 10 } = req.query;
+    const { name, role, branch, page = 1, limit = 10 } = req.query;
 
     // Build filter
     const filter = {};
-    if (role) filter.role = role;
-    if (branch) filter.branch = branch;
+    
+    // Search by name (case-insensitive partial match)
+    if (name) {
+      filter.name = { $regex: name, $options: 'i' };
+    }
+    
+    // Filter by role (exact match or array contains)
+    if (role) {
+      filter.role = role;
+    }
+    
+    // Filter by branch (exact match)
+    if (branch) {
+      filter.branch = branch;
+    }
 
     // Pagination
     const skip = (page - 1) * limit;
@@ -147,12 +160,12 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// UPDATE - Update my profile
-router.put('/', authenticateToken, async (req, res) => {
+// UPDATE - Update user
+router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    const { name, password, branch } = req.body;
+    const { name, current_password, password, password2, branch, role } = req.body;
 
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.params.id);
 
     // Check if new name already exists (if changing name)
     if (name && name !== user.name) {
@@ -164,63 +177,38 @@ router.put('/', authenticateToken, async (req, res) => {
     }
 
     // Update password if provided
-    if (password) {
+    if (password || password2) {
+      // Check if current password is provided
+      if (!current_password) {
+        return res.status(400).json({ error: 'Current password is required to change password' });
+      }
+
+      // Verify current password
+      const isMatch = await user.validatePassword(current_password);
+      if (!isMatch) {
+        return res.status(400).json({ error: 'Current password is incorrect' });
+      }
+
+      // Check if new passwords match
+      if (password !== password2) {
+        return res.status(400).json({ error: 'New passwords do not match' });
+      }
+
+      // Validate new password length
       if (password.length < 6) {
         return res.status(400).json({ error: 'Password must be at least 6 characters long' });
       }
+
       user.password = password;
     }
 
     // Update branch if provided
-    if (branch !== undefined) {
-      const validBranch = await Branch.findById(branch);
-      if (!validBranch) {
-        return res.status(400).json({ error: 'This branch does not exist' });
-      }
+      if (branch) {
+        const validBranch = await Branch.findById(branch);
+        if (!validBranch) {
+          return res.status(400).json({ error: 'This branch does not exist' });
+        }
       user.branch = branch;
-    }
-
-    await user.save();
-
-    res.json({
-      message: 'User updated successfully',
-      user: user.toJSON()
-    });
-  } catch (error) {
-    console.error('Update user error:', error);
-    if (error.kind === 'ObjectId') {
-      return res.status(400).json({ error: 'Invalid user ID' });
-    }
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// UPDATE - Update user (admin only)
-router.put('/:id', authenticateToken, requirePermission('user'), async (req, res) => {
-  try {
-    const { name, password, role, branch } = req.body;
-
-    const user = await User.findById(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Check if new name already exists (if changing name)
-    if (name && name !== user.name) {
-      const existingUser = await User.findOne({ name });
-      if (existingUser) {
-        return res.status(409).json({ error: 'Username already taken' });
-      }
-      user.name = name;
-    }
-
-    // Update password if provided
-    if (password) {
-      if (password.length < 6) {
-        return res.status(400).json({ error: 'Password must be at least 6 characters long' });
-      }
-      user.password = password;
     }
 
     // Update roles if provided
@@ -232,15 +220,6 @@ router.put('/:id', authenticateToken, requirePermission('user'), async (req, res
         }
       }
       user.role = role;
-    }
-
-    // Update branch if provided
-    if (branch !== undefined) {
-      const validBranch = await Branch.findById(branch);
-      if (!validBranch) {
-        return res.status(400).json({ error: 'This branch does not exist' });
-      }
-      user.branch = branch;
     }
 
     await user.save();

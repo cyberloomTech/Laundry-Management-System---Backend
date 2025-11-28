@@ -90,6 +90,64 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// BULK UPDATE - Update multiple roles at once
+router.put('/', async (req, res) => {
+  try {
+    const { updates } = req.body;
+
+    // Validation
+    if (!updates || !Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({ error: 'Updates array is required and must not be empty' });
+    }
+
+    // Validate each update
+    for (const update of updates) {
+      if (!update._id) {
+        return res.status(400).json({ error: 'Each update must have an _id' });
+      }
+
+      // Check if at least roleName or permission is provided
+      if (!update.roleName && !update.permission) {
+        return res.status(400).json({ error: `Update for role ${update._id} must include roleName or permission` });
+      }
+
+      // Validate permission is an array if provided
+      if (update.permission !== undefined && !Array.isArray(update.permission)) {
+        return res.status(400).json({ error: `Permission for role ${update._id} must be an array` });
+      }
+    }
+
+    // Build bulk operations
+    const operations = updates.map(item => {
+      const updateFields = {};
+      if (item.roleName !== undefined) updateFields.roleName = item.roleName;
+      if (item.permission !== undefined) updateFields.permission = item.permission;
+
+      return {
+        updateOne: {
+          filter: { _id: item._id },
+          update: { $set: updateFields }
+        }
+      };
+    });
+
+    // Execute bulk write
+    const result = await Role.bulkWrite(operations);
+
+    res.json({
+      message: 'Roles updated successfully',
+      result: {
+        matchedCount: result.matchedCount,
+        modifiedCount: result.modifiedCount,
+        upsertedCount: result.upsertedCount
+      }
+    });
+  } catch (error) {
+    console.error('Bulk update roles error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // UPDATE - Update role permissions
 router.put('/:id', async (req, res) => {
   try {

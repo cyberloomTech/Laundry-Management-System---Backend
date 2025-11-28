@@ -12,6 +12,7 @@ const chatRoutes = require('./routes/chats');
 const messageRoutes = require('./routes/messages');
 const customerRoutes = require('./routes/customers');
 const invoiceRoutes = require('./routes/invoices');
+const backupRoutes = require('./routes/backup');
 
 const app = express();
 const server = http.createServer(app);
@@ -59,6 +60,7 @@ app.use('/api/chats', chatRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/invoices', invoiceRoutes);
+app.use('/api/backup', backupRoutes);
 
 // Socket.IO connection handling
 require('./socket/socketHandler')(io);
