@@ -3,6 +3,7 @@ const { exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const BackupConfig = require('../models/BackupConfig');
 
 const router = express.Router();
 
@@ -14,155 +15,221 @@ router.use(requireRole('admin'));
 const DB_URI = 'mongodb://localhost:27017/laundry_db';
 const DB_NAME = 'laundry_db';
 
-// POST - Create database backup
-router.post('/', async (req, res) => {
-  try {
-    const { backupDir = '../backups' } = req.body;
+// Store interval reference
+let backupInterval = null;
 
-    // Create backup directory path
-    const timestamp = Date.now();
-    const backupPath = path.join(__dirname, backupDir, `backup-${timestamp}`);
-
-    // Ensure backup directory exists
-    const backupBaseDir = path.join(__dirname, backupDir);
+// Function to perform backup
+const performBackup = async (backupDir) => {
+  return new Promise((resolve, reject) => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const dateFormat = `${year}${month}${day}${hours}${minutes}${seconds}`;
+    
+    const backupPath = path.join(__dirname, '..', backupDir, `backup-${dateFormat}`);
+    const backupBaseDir = path.join(__dirname, '..', backupDir);
+    
     if (!fs.existsSync(backupBaseDir)) {
       fs.mkdirSync(backupBaseDir, { recursive: true });
     }
 
-    // Build mongodump command
-    const command = `mongodump --uri="${DB_URI}" --out="${backupPath}"`;
+    const possiblePaths = [
+      'mongodump',
+      'C:\\Program Files\\MongoDB\\Tools\\100\\bin\\mongodump.exe',
+      'C:\\Program Files\\MongoDB\\Server\\7.0\\bin\\mongodump.exe',
+      'C:\\Program Files\\MongoDB\\Server\\6.0\\bin\\mongodump.exe'
+    ];
 
-    // Execute mongodump
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        console.error('Backup error:', error);
-        return res.status(500).json({ 
-          error: 'Backup failed', 
-          details: error.message 
-        });
+    let mongodumpCmd = 'mongodump';
+    for (const cmdPath of possiblePaths) {
+      if (cmdPath !== 'mongodump' && fs.existsSync(cmdPath)) {
+        mongodumpCmd = `"${cmdPath}"`;
+        break;
       }
+    }
 
-      if (stderr) {
-        console.error('Backup stderr:', stderr);
-      }
+    const command = `${mongodumpCmd} --uri="${DB_URI}" --out="${backupPath}"`;
+    
+    exec(command, { 
+      maxBuffer: 1024 * 1024 * 10,
+      timeout: 60000,
+      shell: true,
+      windowsHide: true
+    }, (error, stdout, stderr) => {
+      setTimeout(() => {
+        if (!fs.existsSync(backupPath)) {
+          return reject(new Error('Backup directory was not created'));
+        }
 
-      console.log('Backup stdout:', stdout);
-
-      res.json({
-        message: 'Database backup created successfully',
-        backupPath: backupPath,
-        timestamp: timestamp,
-        database: DB_NAME
-      });
+        const dbPath = path.join(backupPath, DB_NAME);
+        if (fs.existsSync(dbPath)) {
+          const files = fs.readdirSync(dbPath);
+          if (files.length > 0) {
+            return resolve({
+              message: 'Database backup created successfully',
+              backupPath: backupPath,
+              backupName: `backup-${dateFormat}`,
+              database: DB_NAME,
+              filesCount: files.length
+            });
+          }
+        }
+        reject(new Error('Backup files were not created properly'));
+      }, 1500);
     });
+  });
+};
+
+// Function to schedule automatic backups
+const scheduleBackup = async () => {
+  try {
+    const config = await BackupConfig.findOne();
+    if (!config || !config.autoBackupEnabled) {
+      if (backupInterval) {
+        clearInterval(backupInterval);
+        backupInterval = null;
+      }
+      return;
+    }
+
+    // Clear existing interval
+    if (backupInterval) {
+      clearInterval(backupInterval);
+    }
+
+    // Set new interval
+    const intervalMs = config.backupInterval * 60 * 60 * 1000; // Convert hours to milliseconds
+    backupInterval = setInterval(async () => {
+      try {
+        console.log('Running automatic backup...');
+        await performBackup(config.backupPath);
+        
+        // Update last backup time
+        config.lastBackupTime = new Date();
+        config.nextBackupTime = new Date(Date.now() + intervalMs);
+        await config.save();
+        
+        console.log('Automatic backup completed successfully');
+      } catch (err) {
+        console.error('Automatic backup failed:', err);
+      }
+    }, intervalMs);
+
+    console.log(`Automatic backup scheduled every ${config.backupInterval} hours`);
+  } catch (err) {
+    console.error('Error scheduling backup:', err);
+  }
+};
+
+// Initialize backup schedule on server start
+scheduleBackup();
+
+// GET - Get backup configuration
+router.get('/config', async (req, res) => {
+  try {
+    let config = await BackupConfig.findOne();
+    if (!config) {
+      config = await BackupConfig.create({});
+    }
+    res.json({ config });
+  } catch (error) {
+    console.error('Get config error:', error);
+    res.status(500).json({ error: 'Failed to get backup configuration' });
+  }
+});
+
+// PUT - Update backup configuration
+router.put('/config', async (req, res) => {
+  try {
+    const { autoBackupEnabled, backupInterval, backupPath } = req.body;
+    
+    let config = await BackupConfig.findOne();
+    if (!config) {
+      config = await BackupConfig.create({});
+    }
+
+    if (autoBackupEnabled !== undefined) config.autoBackupEnabled = autoBackupEnabled;
+    if (backupInterval !== undefined) config.backupInterval = backupInterval;
+    if (backupPath !== undefined) config.backupPath = backupPath;
+
+    // Calculate next backup time if auto backup is enabled
+    if (config.autoBackupEnabled) {
+      const intervalMs = config.backupInterval * 60 * 60 * 1000;
+      config.nextBackupTime = new Date(Date.now() + intervalMs);
+    } else {
+      config.nextBackupTime = null;
+    }
+
+    await config.save();
+    
+    // Reschedule backups
+    await scheduleBackup();
+
+    res.json({ 
+      message: 'Backup configuration updated successfully',
+      config 
+    });
+  } catch (error) {
+    console.error('Update config error:', error);
+    res.status(500).json({ error: 'Failed to update backup configuration' });
+  }
+});
+
+// POST - Create database backup
+router.post('/', async (req, res) => {
+  try {
+    const { backupDir = '../backups' } = req.body;
+    
+    const result = await performBackup(backupDir);
+    
+    // Update last backup time in config
+    let config = await BackupConfig.findOne();
+    if (config) {
+      config.lastBackupTime = new Date();
+      await config.save();
+    }
+    
+    res.json(result);
   } catch (error) {
     console.error('Backup route error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ 
+      error: 'Backup failed', 
+      details: error.message 
+    });
   }
 });
 
-// GET - List all backups
-router.get('/', async (req, res) => {
+// GET - Select backup folder (returns full path)
+router.get('/select-folder', async (req, res) => {
   try {
-    const { backupDir = '../backups' } = req.query;
-    const backupBaseDir = path.join(__dirname, backupDir);
-
-    // Check if backup directory exists
-    if (!fs.existsSync(backupBaseDir)) {
-      return res.json({
-        message: 'No backups found',
-        backups: []
+    const { dialog } = require('node-file-dialog');
+    
+    const result = await dialog({ type: 'directory' });
+    
+    if (result && result.length > 0) {
+      const selectedPath = result[0];
+      res.json({ 
+        success: true, 
+        path: selectedPath 
+      });
+    } else {
+      res.status(400).json({ 
+        success: false, 
+        error: 'No folder selected' 
       });
     }
-
-    // Read backup directory
-    const files = fs.readdirSync(backupBaseDir);
-    
-    // Filter and map backup folders
-    const backups = files
-      .filter(file => {
-        const filePath = path.join(backupBaseDir, file);
-        return fs.statSync(filePath).isDirectory() && file.startsWith('backup-');
-      })
-      .map(file => {
-        const filePath = path.join(backupBaseDir, file);
-        const stats = fs.statSync(filePath);
-        const timestamp = parseInt(file.replace('backup-', ''));
-        
-        return {
-          name: file,
-          path: filePath,
-          timestamp: timestamp,
-          date: new Date(timestamp).toISOString(),
-          size: getDirectorySize(filePath)
-        };
-      })
-      .sort((a, b) => b.timestamp - a.timestamp); // Sort by newest first
-
-    res.json({
-      message: 'Backups retrieved successfully',
-      count: backups.length,
-      backups: backups
-    });
   } catch (error) {
-    console.error('List backups error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Folder selection error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to open folder dialog',
+      details: error.message 
+    });
   }
 });
-
-// DELETE - Delete a specific backup
-router.delete('/:backupName', async (req, res) => {
-  try {
-    const { backupName } = req.params;
-    const { backupDir = '../backups' } = req.body;
-
-    // Validate backup name format
-    if (!backupName.startsWith('backup-')) {
-      return res.status(400).json({ error: 'Invalid backup name format' });
-    }
-
-    const backupPath = path.join(__dirname, backupDir, backupName);
-
-    // Check if backup exists
-    if (!fs.existsSync(backupPath)) {
-      return res.status(404).json({ error: 'Backup not found' });
-    }
-
-    // Delete backup directory recursively
-    fs.rmSync(backupPath, { recursive: true, force: true });
-
-    res.json({
-      message: 'Backup deleted successfully',
-      backupName: backupName
-    });
-  } catch (error) {
-    console.error('Delete backup error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Helper function to calculate directory size
-function getDirectorySize(dirPath) {
-  let size = 0;
-  
-  try {
-    const files = fs.readdirSync(dirPath);
-    
-    for (const file of files) {
-      const filePath = path.join(dirPath, file);
-      const stats = fs.statSync(filePath);
-      
-      if (stats.isDirectory()) {
-        size += getDirectorySize(filePath);
-      } else {
-        size += stats.size;
-      }
-    }
-  } catch (error) {
-    console.error('Error calculating directory size:', error);
-  }
-  
-  return size;
-}
 
 module.exports = router;

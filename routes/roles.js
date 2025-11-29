@@ -191,17 +191,30 @@ router.put('/:id', async (req, res) => {
 // DELETE - Delete role
 router.delete('/:id', async (req, res) => {
   try {
+    const User = require('../models/User');
+    
     const role = await Role.findById(req.params.id);
 
     if (!role) {
       return res.status(404).json({ error: 'Role not found' });
     }
 
+    // Remove role from all users who have this role
+    // Since role is stored as an array of strings (roleName), we use $pull
+    const updateResult = await User.updateMany(
+      { role: role.roleName },
+      { $pull: { role: role.roleName } }
+    );
+
+    console.log(`Updated ${updateResult.modifiedCount} users by removing role: ${role.roleName}`);
+
+    // Delete the role
     await Role.findByIdAndDelete(req.params.id);
 
     res.json({
       message: 'Role deleted successfully',
-      role
+      role,
+      usersUpdated: updateResult.modifiedCount
     });
   } catch (error) {
     console.error('Delete role error:', error);

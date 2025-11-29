@@ -85,6 +85,10 @@ router.post('/', async (req, res) => {
           path: 'createdBy', 
           select: 'name role branch',
           populate: { path: 'branch' }
+        },
+        {
+          path: 'items.item',
+          select: 'itemName'
         }
       ]
     });
@@ -107,6 +111,9 @@ router.get('/', async (req, res) => {
       customer_code,
       customerName,
       customerPhone,
+      delivery_from,
+      delivery_to,
+      status,
       fromDate, 
       toDate, 
       today,
@@ -116,6 +123,7 @@ router.get('/', async (req, res) => {
 
     // Build filter
     const filter = {};
+    let orderFilter = {};
     
     // Filter by order
     if (order) {
@@ -176,6 +184,68 @@ router.get('/', async (req, res) => {
       }
     }
 
+    // Filter by delivery date range
+    if (delivery_from || delivery_to) {
+      filter.delivery_date = {};
+      
+      if (delivery_from) {
+        const from = new Date(delivery_from + 'T00:00:00.000Z');
+        if (!isNaN(from.getTime())) {
+          filter.delivery_date.$gte = from;
+        }
+      }
+      
+      if (delivery_to) {
+        const to = new Date(delivery_to + 'T23:59:59.999Z');
+        if (!isNaN(to.getTime())) {
+          filter.delivery_date.$lte = to;
+        }
+      }
+    }
+
+    // Filter by order status
+    if (status) {
+      orderFilter.status = status;
+    }
+
+    // If we have order status filter, find matching orders first
+    if (status) {
+      const matchingOrders = await Order.find(orderFilter).select('_id');
+      const orderIds = matchingOrders.map(o => o._id);
+      
+      if (orderIds.length > 0) {
+        // Combine with existing order filter if any
+        if (filter.order) {
+          if (filter.order.$in) {
+            // Intersect the two arrays
+            filter.order.$in = filter.order.$in.filter(id => 
+              orderIds.some(oid => oid.toString() === id.toString())
+            );
+          } else {
+            // Check if single order ID is in the matching orders
+            if (orderIds.some(oid => oid.toString() === filter.order.toString())) {
+              filter.order = { $in: [filter.order] };
+            } else {
+              filter.order = { $in: [] }; // No match
+            }
+          }
+        } else {
+          filter.order = { $in: orderIds };
+        }
+      } else {
+        // No orders match the status filter
+        return res.json({
+          invoices: [],
+          pagination: {
+            total: 0,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            pages: 0
+          }
+        });
+      }
+    }
+
     // Filter by today's invoices
     if (today === 'true') {
       const startOfDay = new Date();
@@ -213,15 +283,22 @@ router.get('/', async (req, res) => {
     // Pagination
     const skip = (page - 1) * limit;
 
-    const invoices = await Invoice.find(filter)
+    let invoices = await Invoice.find(filter)
       .populate({
         path: 'order',
         populate: [
-          { path: 'customer' },
+          { 
+            path: 'customer',
+            select: 'customer_code name phone phone2 address email rnc'
+          },
           { 
             path: 'createdBy', 
             select: 'name role branch',
             populate: { path: 'branch' }
+          },
+          {
+            path: 'items.item',
+            select: 'itemName'
           }
         ]
       })
@@ -249,15 +326,22 @@ router.get('/', async (req, res) => {
 // READ - Get single invoice by ID
 router.get('/:id', async (req, res) => {
   try {
-    const invoice = await Invoice.findById(req.params.id)
+    let invoice = await Invoice.findById(req.params.id)
       .populate({
         path: 'order',
         populate: [
-          { path: 'customer' },
+          { 
+            path: 'customer',
+            select: 'customer_code name phone phone2 address email rnc'
+          },
           { 
             path: 'createdBy', 
             select: 'name role branch',
             populate: { path: 'branch' }
+          },
+          {
+            path: 'items.item',
+            select: 'itemName'
           }
         ]
       });
@@ -355,6 +439,10 @@ router.put('/:id', async (req, res) => {
           path: 'createdBy', 
           select: 'name role branch',
           populate: { path: 'branch' }
+        },
+        {
+          path: 'items.item',
+          select: 'itemName'
         }
       ]
     });

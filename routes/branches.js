@@ -125,17 +125,29 @@ router.put('/:id', async (req, res) => {
 // DELETE - Delete branch
 router.delete('/:id', async (req, res) => {
   try {
+    const User = require('../models/User');
+    
     const branch = await Branch.findById(req.params.id);
 
     if (!branch) {
       return res.status(404).json({ error: 'Branch not found' });
     }
 
+    // Remove branch reference from all users who have this branch
+    const updateResult = await User.updateMany(
+      { branch: req.params.id },
+      { $unset: { branch: '' } }
+    );
+
+    console.log(`Updated ${updateResult.modifiedCount} users by removing branch reference`);
+
+    // Delete the branch
     await Branch.findByIdAndDelete(req.params.id);
 
     res.json({
       message: 'Branch deleted successfully',
-      branch
+      branch,
+      usersUpdated: updateResult.modifiedCount
     });
   } catch (error) {
     console.error('Delete branch error:', error);

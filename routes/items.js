@@ -104,13 +104,8 @@ router.put('/', authenticateToken, requirePermission('price'), async (req, res) 
 
     // Validate each update
     for (const update of updates) {
-      if (!update.itemName) {
-        return res.status(400).json({ error: 'Each update must have an itemName' });
-      }
-
-      // Check if at least one price field is provided
-      if (update.wash === undefined && update.iron === undefined && update.repair === undefined) {
-        return res.status(400).json({ error: `Update for ${update.itemName} must include at least one price field (wash, iron, or repair)` });
+      if (!update._id && !update.itemName) {
+        return res.status(400).json({ error: 'Each update must have an _id or itemName' });
       }
 
       // Validate prices are positive
@@ -124,13 +119,18 @@ router.put('/', authenticateToken, requirePermission('price'), async (req, res) 
     // Build bulk operations
     const operations = updates.map(item => {
       const updateFields = {};
+      if (item.itemName !== undefined) updateFields.itemName = item.itemName;
+      if (item.category !== undefined) updateFields.category = item.category;
       if (item.wash !== undefined) updateFields.wash = item.wash;
       if (item.iron !== undefined) updateFields.iron = item.iron;
       if (item.repair !== undefined) updateFields.repair = item.repair;
 
+      // Use _id if available, otherwise use itemName
+      const filter = item._id ? { _id: item._id } : { itemName: item.itemName };
+
       return {
         updateOne: {
-          filter: { itemName: item.itemName },
+          filter,
           update: { $set: updateFields }
         }
       };
