@@ -1,11 +1,47 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const Item = require('../models/Item');
 const { authenticateToken, requireRole, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = 'uploads/items';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'item-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|gif|webp/;
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = allowedTypes.test(file.mimetype);
+
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed!'));
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: fileFilter
+});
+
 // CREATE - Add new item
-router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/', authenticateToken, requireRole('admin'), upload.single('itemImage'), async (req, res) => {
   try {
     const { itemName, category, wash, iron, repair } = req.body;
 
@@ -24,7 +60,8 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
       category,
       wash: wash || 0,
       iron: iron || 0,
-      repair: repair || 0
+      repair: repair || 0,
+      itemImage: req.file ? `/uploads/items/${req.file.filename}` : null
     });
 
     await item.save();
@@ -35,6 +72,12 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
     });
   } catch (error) {
     console.error('Create item error:', error);
+    // Clean up uploaded file if item creation fails
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+    }
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -42,11 +85,16 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
 // READ - Get all items
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { category, page = 1, limit = 10 } = req.query;
+    const { category, itemName, page = 1, limit = 10 } = req.query;
 
     // Build filter
     const filter = {};
     if (category) filter.category = category;
+    
+    // Search by itemName (case-insensitive partial match)
+    if (itemName) {
+      filter.itemName = { $regex: itemName, $options: 'i' };
+    }
 
     // Pagination
     const skip = (page - 1) * limit;
@@ -193,6 +241,89 @@ router.put('/:id', authenticateToken, requirePermission('price'), async (req, re
   }
 });
 
+// UPDATE - Upload/Update item image
+router.put('/:id/image', authenticateToken, requirePermission('price'), upload.single('itemImage'), async (req, res) => {
+  try {
+    const item = await Item.findById(req.params.id);
+
+    if (!item) {
+      // Clean up uploaded file
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // Delete old image if exists
+    if (item.itemImage) {
+      const oldImagePath = path.join(__dirname, '..', item.itemImage);
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlink(oldImagePath, (err) => {
+          if (err) console.error('Error deleting old image:', err);
+        });
+      }
+    }
+
+    // Update image path
+    item.itemImage = req.file ? `/uploads/items/${req.file.filename}` : null;
+    await item.save();
+
+    res.json({
+      message: 'Item image updated successfully',
+      item
+    });
+  } catch (error) {
+    console.error('Update item image error:', error);
+    // Clean up uploaded file if update fails
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+    }
+    if (error.kind === 'ObjectId') {
+      return res.status(400).json({ error: 'Invalid item ID' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE - Delete item image
+router.delete('/:id/image', authenticateToken, requirePermission('price'), async (req, res) => {
+  try {
+    const item = await Item.findById(req.params.id);
+
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // Delete image file if exists
+    if (item.itemImage) {
+      const imagePath = path.join(__dirname, '..', item.itemImage);
+      if (fs.existsSync(imagePath)) {
+        fs.unlink(imagePath, (err) => {
+          if (err) console.error('Error deleting image:', err);
+        });
+      }
+    }
+
+    item.itemImage = null;
+    await item.save();
+
+    res.json({
+      message: 'Item image deleted successfully',
+      item
+    });
+  } catch (error) {
+    console.error('Delete item image error:', error);
+    if (error.kind === 'ObjectId') {
+      return res.status(400).json({ error: 'Invalid item ID' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // DELETE - Delete item
 router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
@@ -200,6 +331,16 @@ router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) 
 
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // Delete image file if exists
+    if (item.itemImage) {
+      const imagePath = path.join(__dirname, '..', item.itemImage);
+      if (fs.existsSync(imagePath)) {
+        fs.unlink(imagePath, (err) => {
+          if (err) console.error('Error deleting image:', err);
+        });
+      }
     }
 
     await Item.findByIdAndDelete(req.params.id);

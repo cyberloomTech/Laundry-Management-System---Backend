@@ -25,6 +25,10 @@ const ItemSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: 0
+  },
+  itemImage: {
+    type: String,
+    default: null
   }
 }, {timestamps: true});
 

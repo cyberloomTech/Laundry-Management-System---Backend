@@ -6,7 +6,7 @@ const RoleSchema = new mongoose.Schema({
   },
   permission: [{
     type: String,
-    enum: ['order', 'status', 'price', 'receipt', 'user', 'configuration'],
+    enum: ['order', 'status', 'customer', 'price', 'receipt', 'user', 'configuration'],
     trim: true,
     default: []
   }]

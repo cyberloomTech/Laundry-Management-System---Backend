@@ -6,10 +6,9 @@ const router = express.Router();
 
 // All routes require admin authentication
 router.use(authenticateToken);
-router.use(requireRole('admin'));
 
 // CREATE - Add new role
-router.post('/', async (req, res) => {
+router.post('/', requireRole('admin'), async (req, res) => {
   try {
     const { roleName, permission } = req.body;
 
@@ -91,7 +90,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // BULK UPDATE - Update multiple roles at once
-router.put('/', async (req, res) => {
+router.put('/', requireRole('admin'), async (req, res) => {
   try {
     const { updates } = req.body;
 
@@ -149,7 +148,7 @@ router.put('/', async (req, res) => {
 });
 
 // UPDATE - Update role permissions
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireRole('admin'), async (req, res) => {
   try {
     const { roleName, permission } = req.body;
 
@@ -189,7 +188,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE - Delete role
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireRole('admin'), async (req, res) => {
   try {
     const User = require('../models/User');
     

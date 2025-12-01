@@ -6,7 +6,6 @@ const router = express.Router();
 
 // All routes require admin authentication
 router.use(authenticateToken);
-router.use(requireRole('admin'));
 
 // CREATE - Add new branch
 router.post('/', async (req, res) => {

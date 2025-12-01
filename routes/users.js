@@ -1,10 +1,46 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const User = require('../models/User');
 const Role = require('../models/Role');
 const Branch = require('../models/Branch');
 const { authenticateToken, requireRole, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
+
+// Configure multer for avatar uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = 'uploads/avatars';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|gif|webp/;
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = allowedTypes.test(file.mimetype);
+
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed!'));
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: fileFilter
+});
 
 // Get current user profile (any authenticated user)
 router.get('/profile', authenticateToken, async (req, res) => {
@@ -27,26 +63,50 @@ router.get('/profile', authenticateToken, async (req, res) => {
 });
 
 // CREATE - Add new user (admin only)
-router.post('/', authenticateToken, requirePermission('user'), async (req, res) => {
+router.post('/', authenticateToken, requirePermission('user'), upload.single('avatar'), async (req, res) => {
   try {
     const { name, password, password2, role, branch } = req.body;
 
     // Validation
     if (!name || !password || !password2) {
+      // Clean up uploaded file if validation fails
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
       return res.status(400).json({ error: 'Name, password, and password2 are required' });
     }
 
     if (password !== password2) {
+      // Clean up uploaded file if validation fails
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
       return res.status(400).json({ error: 'Passwords do not match' });
     }
 
     if (password.length < 6) {
+      // Clean up uploaded file if validation fails
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
       return res.status(400).json({ error: 'Password must be at least 6 characters long' });
     }
 
     // Check if user already exists
     const existingUser = await User.findOne({ name });
     if (existingUser) {
+      // Clean up uploaded file if validation fails
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
       return res.status(409).json({ error: 'User already exists' });
     }
 
@@ -55,6 +115,12 @@ router.post('/', authenticateToken, requirePermission('user'), async (req, res) 
       for (let oneRole of role) {
         const validRole = await Role.findOne({ roleName: oneRole });
         if (!validRole) {
+          // Clean up uploaded file if validation fails
+          if (req.file) {
+            fs.unlink(req.file.path, (err) => {
+              if (err) console.error('Error deleting file:', err);
+            });
+          }
           return res.status(400).json({ error: `${oneRole} role does not exist` });
         }
       }
@@ -64,6 +130,12 @@ router.post('/', authenticateToken, requirePermission('user'), async (req, res) 
     if (branch) {
       const validBranch = await Branch.findById(branch);
       if (!validBranch) {
+        // Clean up uploaded file if validation fails
+        if (req.file) {
+          fs.unlink(req.file.path, (err) => {
+            if (err) console.error('Error deleting file:', err);
+          });
+        }
         return res.status(400).json({ error: 'This branch does not exist' });
       }
     }
@@ -73,7 +145,8 @@ router.post('/', authenticateToken, requirePermission('user'), async (req, res) 
       name,
       password,
       role: role || [],
-      branch
+      branch,
+      avatar: req.file ? `/uploads/avatars/${req.file.filename}` : null
     });
 
     await user.save();
@@ -87,6 +160,12 @@ router.post('/', authenticateToken, requirePermission('user'), async (req, res) 
     });
   } catch (error) {
     console.error('Create user error:', error);
+    // Clean up uploaded file if user creation fails
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+    }
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -240,6 +319,111 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// UPDATE - Upload/Update user avatar
+router.put('/:id/avatar', authenticateToken, upload.single('avatar'), async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      // Clean up uploaded file
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if user is updating their own avatar or has permission
+    if (user._id.toString() !== req.user._id.toString() && !req.user.permissions?.includes('user')) {
+      // Clean up uploaded file
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
+      return res.status(403).json({ error: 'Not authorized to update this avatar' });
+    }
+
+    // Delete old avatar if exists
+    if (user.avatar) {
+      const oldAvatarPath = path.join(__dirname, '..', user.avatar);
+      if (fs.existsSync(oldAvatarPath)) {
+        fs.unlink(oldAvatarPath, (err) => {
+          if (err) console.error('Error deleting old avatar:', err);
+        });
+      }
+    }
+
+    // Update avatar path
+    user.avatar = req.file ? `/uploads/avatars/${req.file.filename}` : null;
+    await user.save();
+
+    // Populate branch before sending response
+    await user.populate('branch');
+
+    res.json({
+      message: 'Avatar updated successfully',
+      user: user.toJSON()
+    });
+  } catch (error) {
+    console.error('Update avatar error:', error);
+    // Clean up uploaded file if update fails
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+    }
+    if (error.kind === 'ObjectId') {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE - Delete user avatar
+router.delete('/:id/avatar', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if user is deleting their own avatar or has permission
+    if (user._id.toString() !== req.user._id.toString() && !req.user.permissions?.includes('user')) {
+      return res.status(403).json({ error: 'Not authorized to delete this avatar' });
+    }
+
+    // Delete avatar file if exists
+    if (user.avatar) {
+      const avatarPath = path.join(__dirname, '..', user.avatar);
+      if (fs.existsSync(avatarPath)) {
+        fs.unlink(avatarPath, (err) => {
+          if (err) console.error('Error deleting avatar:', err);
+        });
+      }
+    }
+
+    user.avatar = null;
+    await user.save();
+
+    // Populate branch before sending response
+    await user.populate('branch');
+
+    res.json({
+      message: 'Avatar deleted successfully',
+      user: user.toJSON()
+    });
+  } catch (error) {
+    console.error('Delete avatar error:', error);
+    if (error.kind === 'ObjectId') {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // DELETE - Delete user (admin only)
 router.delete('/:id', authenticateToken, requirePermission('user'), async (req, res) => {
   try {
@@ -252,6 +436,16 @@ router.delete('/:id', authenticateToken, requirePermission('user'), async (req, 
     // Prevent admin from deleting themselves
     if (user._id.toString() === req.user._id.toString()) {
       return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+
+    // Delete avatar file if exists
+    if (user.avatar) {
+      const avatarPath = path.join(__dirname, '..', user.avatar);
+      if (fs.existsSync(avatarPath)) {
+        fs.unlink(avatarPath, (err) => {
+          if (err) console.error('Error deleting avatar:', err);
+        });
+      }
     }
 
     await User.findByIdAndDelete(req.params.id);

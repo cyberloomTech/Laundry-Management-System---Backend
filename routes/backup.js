@@ -9,7 +9,6 @@ const router = express.Router();
 
 // All routes require admin authentication
 router.use(authenticateToken);
-router.use(requireRole('admin'));
 
 // Database configuration
 const DB_URI = 'mongodb://localhost:27017/laundry_db';
@@ -143,7 +142,7 @@ router.get('/config', async (req, res) => {
 });
 
 // PUT - Update backup configuration
-router.put('/config', async (req, res) => {
+router.put('/config', requireRole('admin'), async (req, res) => {
   try {
     const { autoBackupEnabled, backupInterval, backupPath } = req.body;
     
@@ -204,7 +203,7 @@ router.post('/', async (req, res) => {
 });
 
 // GET - Select backup folder (returns full path)
-router.get('/select-folder', async (req, res) => {
+router.get('/select-folder', requireRole('admin'), async (req, res) => {
   try {
     const { dialog } = require('node-file-dialog');
     

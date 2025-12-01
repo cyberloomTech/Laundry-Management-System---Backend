@@ -54,13 +54,16 @@ router.post('/direct', async (req, res) => {
     // Emit new chat creation to participants via Socket.IO
     const io = req.app.get('io');
     if (io) {
-      chat.participants.forEach(participant => {
-        io.to(`user_${participant._id}`).emit('new_chat', {
-          chatId: chat._id,
+      // Notify the recipient (not the creator)
+      const recipientSocketId = `user_${recipientId}`;
+      io.to(recipientSocketId).emit('new_chat', {
+        chat: {
+          _id: chat._id,
           chatType: chat.chatType,
           participants: chat.participants,
-          createdAt: chat.createdAt
-        });
+          createdAt: chat.createdAt,
+          lastActivity: chat.lastActivity
+        }
       });
     }
 
@@ -173,7 +176,7 @@ router.get('/', async (req, res) => {
     })
     .populate({
       path: 'participants',
-      select: 'name role branch',
+      select: 'name role branch avatar',
       populate: { path: 'branch' }
     })
     .populate('branch')
@@ -182,13 +185,27 @@ router.get('/', async (req, res) => {
     .skip(skip)
     .limit(parseInt(limit));
 
+    // Calculate unread count for each chat
+    const chatsWithUnread = await Promise.all(chats.map(async (chat) => {
+      const unreadCount = await Message.countDocuments({
+        chat: chat._id,
+        sender: { $ne: req.user._id },
+        'readBy.user': { $ne: req.user._id }
+      });
+      
+      return {
+        ...chat.toObject(),
+        unreadCount
+      };
+    }));
+
     const total = await Chat.countDocuments({
       participants: req.user._id,
       isActive: true
     });
 
     res.json({
-      chats,
+      chats: chatsWithUnread,
       pagination: {
         total,
         page: parseInt(page),

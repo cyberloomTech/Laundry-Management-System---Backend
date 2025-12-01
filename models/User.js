@@ -18,6 +18,10 @@ const UserSchema = new mongoose.Schema({
   branch:{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Branch'
+  },
+  avatar: {
+    type: String,
+    default: null
   }
 }, {timestamps: true});
 
