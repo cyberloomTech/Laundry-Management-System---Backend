@@ -28,7 +28,7 @@ const InvoiceSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  remain:{
+  remain: {
     type: Number
   },
   cash_amount: {
@@ -41,8 +41,9 @@ const InvoiceSchema = new mongoose.Schema({
     type: Number
   },
   delivery_date: {
-    type: Date
+    type: Date,
+    default: Date.now
   }
-}, {timestamps: true});
+}, { timestamps: true });
 
 module.exports = mongoose.model('Invoice', InvoiceSchema);

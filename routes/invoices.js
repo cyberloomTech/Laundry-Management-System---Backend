@@ -108,15 +108,10 @@ router.get('/', async (req, res) => {
   try {
     const { 
       order,
-      customer_code,
-      customerName,
-      customerPhone,
+      searchTerm,
       delivery_from,
       delivery_to,
       status,
-      fromDate, 
-      toDate, 
-      today,
       page = 1, 
       limit = 10 
     } = req.query;
@@ -130,49 +125,44 @@ router.get('/', async (req, res) => {
       filter.order = order;
     }
 
-    // Filter by customer_code, customerName, or customerPhone
-    if (customer_code || customerName || customerPhone) {
+    // Filter by searchTerm (order_code, customer_code, name, or phone)
+    if (searchTerm) {
       const Customer = require('../models/Customer');
+      const trimmedSearch = searchTerm.trim();
       
-      const customerFilter = {};
-      if (customer_code) {
-        customerFilter.customer_code = parseInt(customer_code);
-      }
-      if (customerName) {
-        customerFilter.name = { $regex: customerName, $options: 'i' };
-      }
-      if (customerPhone) {
-        customerFilter.phone = { $regex: customerPhone, $options: 'i' };
-      }
+      // Search in multiple fields
+      const customerFilter = {
+        $or: [
+          { customer_code: isNaN(trimmedSearch) ? -1 : parseInt(trimmedSearch) },
+          { name: { $regex: trimmedSearch, $options: 'i' } },
+          { phone: { $regex: trimmedSearch.replace(/[\s\-\(\)]/g, ''), $options: 'i' } }
+        ]
+      };
       
       // Find matching customers
       const customers = await Customer.find(customerFilter).select('_id');
       const customerIds = customers.map(c => c._id);
       
+      // Also search by order_code
+      const orderSearchFilter = {
+        $or: [
+          { order_code: isNaN(trimmedSearch) ? -1 : parseInt(trimmedSearch) }
+        ]
+      };
+      
       if (customerIds.length > 0) {
-        // Find orders with these customers
-        const orders = await Order.find({ customer: { $in: customerIds } }).select('_id');
-        const orderIds = orders.map(o => o._id);
-        
-        if (orderIds.length > 0) {
-          filter.order = { $in: orderIds };
-        } else {
-          // No orders found for these customers
-          return res.json({
-            message: 'No orders found for these customers',
-            invoices: [],
-            pagination: {
-              total: 0,
-              page: parseInt(page),
-              limit: parseInt(limit),
-              pages: 0
-            }
-          });
-        }
+        orderSearchFilter.$or.push({ customer: { $in: customerIds } });
+      }
+      
+      // Find orders matching search
+      const orders = await Order.find(orderSearchFilter).select('_id');
+      const orderIds = orders.map(o => o._id);
+      
+      if (orderIds.length > 0) {
+        filter.order = { $in: orderIds };
       } else {
-        // No customers found
+        // No matches found
         return res.json({
-          message: 'No customers found',
           invoices: [],
           pagination: {
             total: 0,
@@ -189,17 +179,23 @@ router.get('/', async (req, res) => {
       filter.delivery_date = {};
       
       if (delivery_from) {
-        const from = new Date(delivery_from + 'T00:00:00.000Z');
-        if (!isNaN(from.getTime())) {
-          filter.delivery_date.$gte = from;
+        // Parse the date string and create a date at start of day in local timezone
+        const [year, month, day] = delivery_from.split('-').map(Number);
+        const from = new Date(year, month - 1, day, 0, 0, 0, 0);
+        if (isNaN(from.getTime())) {
+          return res.status(400).json({ error: 'Invalid delivery_from format. Use YYYY-MM-DD' });
         }
+        filter.delivery_date.$gte = from;
       }
       
       if (delivery_to) {
-        const to = new Date(delivery_to + 'T23:59:59.999Z');
-        if (!isNaN(to.getTime())) {
-          filter.delivery_date.$lte = to;
+        // Parse the date string and create a date at end of day in local timezone
+        const [year, month, day] = delivery_to.split('-').map(Number);
+        const to = new Date(year, month - 1, day, 23, 59, 59, 999);
+        if (isNaN(to.getTime())) {
+          return res.status(400).json({ error: 'Invalid delivery_to format. Use YYYY-MM-DD' });
         }
+        filter.delivery_date.$lte = to;
       }
     }
 
@@ -243,40 +239,6 @@ router.get('/', async (req, res) => {
             pages: 0
           }
         });
-      }
-    }
-
-    // Filter by today's invoices
-    if (today === 'true') {
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      
-      const endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999);
-      
-      filter.createdAt = {
-        $gte: startOfDay,
-        $lte: endOfDay
-      };
-    }
-    // Filter by date range (fromDate to toDate)
-    else if (fromDate || toDate) {
-      filter.createdAt = {};
-      
-      if (fromDate) {
-        const from = new Date(fromDate + 'T00:00:00.000Z');
-        if (isNaN(from.getTime())) {
-          return res.status(400).json({ error: 'Invalid fromDate format. Use YYYY-MM-DD' });
-        }
-        filter.createdAt.$gte = from;
-      }
-      
-      if (toDate) {
-        const to = new Date(toDate + 'T23:59:59.999Z');
-        if (isNaN(to.getTime())) {
-          return res.status(400).json({ error: 'Invalid toDate format. Use YYYY-MM-DD' });
-        }
-        filter.createdAt.$lte = to;
       }
     }
 

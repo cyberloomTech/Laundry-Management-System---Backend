@@ -155,7 +155,7 @@ router.get('/', async (req, res) => {
       };
     }
     // Filter by date range (fromDate to toDate)
-    else if (fromDate || toDate) {
+    if (fromDate || toDate) {
       filter.createdAt = {};
       
       if (fromDate) {
