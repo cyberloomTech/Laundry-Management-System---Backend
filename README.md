@@ -28,7 +28,7 @@ Express.js REST API with JWT authentication, MongoDB, and Socket.IO for real-tim
 
 ### 5. Item Management
 - Laundry items with service-based pricing (wash, iron, repair)
-- Category classification (clothing, home, accessories, other)
+- Category classification (clothing, home, accessories, other and so on)
 - Individual pricing for each service type
 
 ### 6. Order Management
@@ -43,7 +43,7 @@ Express.js REST API with JWT authentication, MongoDB, and Socket.IO for real-tim
 - Invoice generation linked to orders
 - Multiple invoices per order support
 - Automatic payment calculation across all invoices
-- Automatic `remain` (unpaid amount) calculation
+- Automatic `duo` (unpaid amount) calculation
 - Payment methods tracking (cash, card, bank transfer)
 - NCF and location support
 - ITBIS and discount handling
@@ -102,4 +102,21 @@ npm start      # Production
 
 Server runs at: `http://localhost:5000`
 
-See `guide.txt` for detailed API documentation with request/response examples.
+## Tech Stack
+
+- **Express.js 5**: Web framework
+- **MongoDB + Mongoose**: Database and ODM
+- **JWT**: Authentication tokens
+- **bcryptjs**: Password hashing
+- **Socket.IO**: Real-time communication
+- **Multer**: File upload handling
+- **Nodemon**: Development auto-reload
+
+## Development Notes
+
+- All routes are protected with JWT authentication middleware
+- Role-based permissions are checked using `roleUtils.js`
+- File uploads are handled by Multer (avatars, item images)
+- Auto-increment counters generate unique codes for customers and orders
+- Socket.IO handles real-time chat with room-based messaging
+- Backup system creates timestamped MongoDB dumps in `backups/` directory

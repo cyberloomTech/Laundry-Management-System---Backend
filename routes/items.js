@@ -49,6 +49,9 @@ router.post('/', authenticateToken, requireRole('admin'), upload.single('itemIma
     if (!itemName) {
       return res.status(400).json({ error: 'Item name is required' });
     }
+    if (!category) {
+      return res.status(400).json({ error: 'Category is required' });
+    }
 
     if (wash < 0 || iron < 0 || repair < 0) {
       return res.status(400).json({ error: 'Prices must be positive numbers' });

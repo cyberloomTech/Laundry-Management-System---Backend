@@ -427,6 +427,9 @@ router.delete('/:id/avatar', authenticateToken, async (req, res) => {
 // DELETE - Delete user (admin only)
 router.delete('/:id', authenticateToken, requirePermission('user'), async (req, res) => {
   try {
+    const Chat = require('../models/Chat');
+    const Message = require('../models/Message');
+    
     const user = await User.findById(req.params.id);
 
     if (!user) {
@@ -448,6 +451,19 @@ router.delete('/:id', authenticateToken, requirePermission('user'), async (req, 
       }
     }
 
+    // Find all chats where user is a participant
+    const userChats = await Chat.find({ participants: req.params.id });
+
+    // Delete all messages in those chats and the chats themselves
+    for (const chat of userChats) {
+      // Delete all messages in the chat
+      await Message.deleteMany({ chat: chat._id });
+      
+      // Delete the chat
+      await Chat.findByIdAndDelete(chat._id);
+    }
+
+    // Delete the user
     await User.findByIdAndDelete(req.params.id);
 
     res.json({

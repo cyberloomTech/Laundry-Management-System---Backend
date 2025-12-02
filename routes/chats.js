@@ -292,4 +292,45 @@ router.put('/:id/leave', async (req, res) => {
   }
 });
 
+// DELETE - Delete chat and all its messages
+router.delete('/:id', async (req, res) => {
+  try {
+    const chat = await Chat.findById(req.params.id);
+
+    if (!chat) {
+      return res.status(404).json({ error: 'Chat not found' });
+    }
+
+    // Check if user is participant
+    if (!chat.participants.includes(req.user._id)) {
+      return res.status(403).json({ error: 'You are not a participant in this chat' });
+    }
+
+    // Delete all messages in the chat
+    await Message.deleteMany({ chat: req.params.id });
+
+    // Delete the chat
+    await Chat.findByIdAndDelete(req.params.id);
+
+    // Emit chat deletion to all participants via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`chat_${req.params.id}`).emit('chat_deleted', {
+        chatId: req.params.id
+      });
+    }
+
+    res.json({
+      message: 'Chat and all messages deleted successfully',
+      chatId: req.params.id
+    });
+  } catch (error) {
+    console.error('Delete chat error:', error);
+    if (error.kind === 'ObjectId') {
+      return res.status(400).json({ error: 'Invalid chat ID' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;
