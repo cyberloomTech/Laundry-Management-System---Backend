@@ -14,6 +14,7 @@ const customerRoutes = require('./routes/customers');
 const invoiceRoutes = require('./routes/invoices');
 const backupRoutes = require('./routes/backup');
 const statisticsRoutes = require('./routes/statistics');
+const cors = require('cors');
 
 const app = express();
 const server = http.createServer(app);
@@ -24,10 +25,13 @@ const io = socketIo(server, {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 // Connect to MongoDB
 connectDB();
+
+// Enable CORS for Express
+app.use(cors());
 
 // Request logging middleware
 app.use((req, res, next) => {
